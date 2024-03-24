@@ -1,23 +1,34 @@
+#include <cstdlib>
 #include "CommandLineParser.h"
+#include "ChatClient.h"
 
 int main(int argc, char* argv[]) {
     if (argc < 2) {
         std::cerr << "Not enough arguments!" << std::endl;
+        return EXIT_FAILURE;
     }
 
-    auto config = CommandLineParser::parseArguments(argc, argv);
+    AppConfig config = CommandLineParser::parseArguments(argc, argv);
     if (!config.valid) {
         std::cerr << "Failed to parse arguments!" << std::endl;
         CommandLineParser::printUsage();
-        return 1;
+        return EXIT_FAILURE;
     }
 
     if (config.show_help) {
         CommandLineParser::printUsage();
-        return 0;
+        return EXIT_SUCCESS;
     }
 
-    CommandLineParser::printConfig(config);
+    ChatClient client(config);
+    if (!client.connectToServer()) {
+        std::cerr << "Could not connect to the server." << std::endl;
+        return EXIT_FAILURE;
+    }
 
-    return 0;
+    client.runCLI();
+
+    client.closeConnection();
+
+    return EXIT_SUCCESS;
 }

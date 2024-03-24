@@ -1,4 +1,5 @@
 #include "CommandLineParser.h"
+#include <cstring>
 
 void CommandLineParser::printUsage() {
     std::cerr << "usage: ipk24chat-client -s <server_ip_or_hostname> -p <port> -t <tcp_or_udp> [-d <udp_confirmation_timeout>] [-r <udp_retransmissions>]\n";
@@ -31,7 +32,13 @@ AppConfig CommandLineParser::parseArguments(int argc, char* argv[]) {
     while((opt = getopt(argc, argv, "t:s:p:d:r:h")) != -1) {
         switch(opt) {
             case 't':
-                config.transport_protocol = optarg;
+                if (strcmp(optarg, "udp") || strcmp(optarg, "tcp")) {
+                    config.transport_protocol = optarg;
+                } else {
+                    std::cerr << "Wrong transport protocol name!" << std::endl;
+                    config.valid = false;
+                    return config;
+                }
                 break;
             case 's':
                 config.server_address = optarg;
@@ -66,7 +73,7 @@ AppConfig CommandLineParser::parseArguments(int argc, char* argv[]) {
             case 'h':
                 config.show_help = true;
                 break;
-            case '?': // Unrecognized option
+            case '?':
             default:
                 config.valid = false;
                 return config;
