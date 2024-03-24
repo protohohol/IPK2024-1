@@ -1,5 +1,24 @@
-build:	main.cpp CommandLineParser.cpp ChatClient.cpp
-	g++ -o ipk24chat-client main.cpp CommandLineParser.cpp ChatClient.cpp
+CXX := g++
+CXXFLAGS := -Wall -std=c++20 -Iinclude
+SRCDIR := src
+OBJDIR := obj
+INCDIR := include
+SRCS := $(wildcard $(SRCDIR)/*.cpp)
+OBJS := $(patsubst $(SRCDIR)/%.cpp,$(OBJDIR)/%.o,$(SRCS))
+TARGET := ipk24chat-client
+
+.PHONY: build clean directories
+
+build: directories $(TARGET)
+
+directories:
+	mkdir -p $(OBJDIR) $(INCDIR)
+
+$(TARGET): $(OBJS)
+	$(CXX) $(CXXFLAGS) -o $@ $^
+
+$(OBJDIR)/%.o: $(SRCDIR)/%.cpp
+	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 clean:
-	rm ipk24chat-client
+	rm -rf $(OBJDIR) $(TARGET)
