@@ -16,7 +16,7 @@ struct AuthMessage {
     std::string serialize() const {
         std::ostringstream ss;
         
-        ss << "AUTH " << username << " AS " << display_name << " USING " << secret << "\r\n";
+        ss << "AUTH " << username << " AS " << secret << " USING " << display_name << "\r\n";
         return ss.str();
     }
 };
@@ -44,7 +44,7 @@ struct MsgMessage {
     std::string serialize() const {
         std::ostringstream ss;
 
-        ss << "MSG FROM" << display_name << " IS " << message_content << "\r\n";
+        ss << "MSG FROM " << display_name << " IS " << message_content << "\r\n";
         return ss.str();
     }
 
@@ -79,11 +79,12 @@ struct ReplyMessage {
     static ReplyMessage deserialize(const std::string& str) {
         std::istringstream ss(str);
         ReplyMessage msg;
-        std::string type;
-        int success;
+        std::string type, success, is;
 
         ss >> type >> success; // Skip the type and read success as integer
-        msg.success = success != 0;
+        msg.success = (success == "OK");
+
+        ss >> is; // Skip IS
 
         std::string content;
         std::getline(ss >> std::ws, content); // The rest of the stream is the message content
@@ -134,12 +135,7 @@ struct ErrorMessage {
 // BYE message structure
 struct ByeMessage {
     std::string serialize() const {
-        return "BYE";
-    }
-
-    static ByeMessage deserialize(const std::string& str) {
-        // Since BYE messages don't contain additional data, just return a new instance
-        return ByeMessage();
+        return "BYE\r\n";
     }
 };
 

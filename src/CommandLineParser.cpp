@@ -35,7 +35,7 @@ AppConfig CommandLineParser::parseArguments(int argc, char* argv[]) {
                 if (strcmp(optarg, "udp") || strcmp(optarg, "tcp")) {
                     config.transport_protocol = optarg;
                 } else {
-                    std::cerr << "Wrong transport protocol name!" << std::endl;
+                    std::cerr << "ERR: Wrong transport protocol name!" << std::endl;
                     config.valid = false;
                     return config;
                 }
@@ -47,7 +47,7 @@ AppConfig CommandLineParser::parseArguments(int argc, char* argv[]) {
                 try {
                     config.port = std::stoi(optarg);
                 } catch (const std::out_of_range& e) {
-                    std::cerr << "Wrong port number : " << e.what() << std::endl;
+                    std::cerr << "ERR: Wrong port number : " << e.what() << std::endl;
                     config.valid = false;
                     return config;
                 }
@@ -56,7 +56,7 @@ AppConfig CommandLineParser::parseArguments(int argc, char* argv[]) {
                 try {
                     config.timeout = std::stoi(optarg);
                 } catch (const std::out_of_range& e) {
-                    std::cerr << "Wrong timeout number : " << e.what() << std::endl;
+                    std::cerr << "ERR: Wrong timeout number : " << e.what() << std::endl;
                     config.valid = false;
                     return config;
                 }
@@ -65,7 +65,7 @@ AppConfig CommandLineParser::parseArguments(int argc, char* argv[]) {
                 try {
                     config.retransmissions_number = std::stoi(optarg);
                 } catch (const std::out_of_range& e) {
-                    std::cerr << "Wrong retransmissions number : " << e.what() << std::endl;
+                    std::cerr << "ERR: Wrong retransmissions number : " << e.what() << std::endl;
                     config.valid = false;
                     return config;
                 }
