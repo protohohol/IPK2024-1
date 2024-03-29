@@ -1,5 +1,5 @@
 CXX := g++
-CXXFLAGS := -Wall -std=c++20 -Iinclude
+CXXFLAGS := -Wall -std=c++20 -Iinclude -g
 SRCDIR := src
 OBJDIR := obj
 INCDIR := include

@@ -9,12 +9,12 @@ ChatClient* client = nullptr; // Global pointer to ChatClient instance
 
 void handle_sigint(int sig) {
     if (client != nullptr) {
-        client->closeConnection();
-        // Perform any additional cleanup
         std::cerr << "ERR: Ctrl+C pressed. Shutting down..." << std::endl;
+        delete client;
+        client = nullptr;
     }
 
-    std::exit(EXIT_SUCCESS);
+    return;
 }
 
 int main(int argc, char* argv[]) {
@@ -34,19 +34,21 @@ int main(int argc, char* argv[]) {
 
     if (config.show_help) {
         CommandLineParser::printUsage();
-        return EXIT_SUCCESS;
+        return EXIT_FAILURE;
     }
 
-    ChatClient localClient(config);
-    client = &localClient; // Set global pointer to the instance
+    client = new ChatClient(config);
     if (!client->connectToServer()) {
         std::cerr << "ERR: Could not connect to the server." << std::endl;
+        delete client;
+        client = nullptr;
         return EXIT_FAILURE;
     }
 
     client->runCLI();
 
-    client->closeConnection();
+    delete client;
+    client = nullptr;
 
     return EXIT_SUCCESS;
 }
