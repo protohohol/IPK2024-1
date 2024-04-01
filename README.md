@@ -34,6 +34,7 @@
 │  
 ├── Makefile
 ├── README.md
+├── CHANGELOG.md
 └── LICENSE                     # GNU license
 ```
 
