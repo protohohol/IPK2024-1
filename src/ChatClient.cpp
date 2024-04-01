@@ -218,7 +218,7 @@ bool ChatClient::sendConfirmMessage(const uint16_t message_id) {
     return true; // Message sent successfully
 }
 
-void ChatClient::runCLI() {
+int ChatClient::runCLI() {
     // Setup poll structure for stdin and the server socket
     struct pollfd fds[2];
     fds[0].fd = server_socket;
@@ -229,14 +229,15 @@ void ChatClient::runCLI() {
     std::queue<std::string> command_queue;  // Queue to hold commands when waiting for a server response
 
     while (true) {
-        if (bye || err) return;
+        if (bye) return EXIT_SUCCESS;
+        else if (err) return EXIT_FAILURE;
 
         const int timeout_duration = waiting_for_confirm ? 50 : -1; // Wait for 250ms if waiting for confirmation, else wait indefinitely
 
         int ret = poll(fds, 2, timeout_duration);  // Wait indefinitely until there's activity
         if (ret == -1) {
             // Handle error
-            std::cerr << "ERR: poll" << std::endl;
+            std::cerr << "ERR: poll: " << strerror(errno) << std::endl;
             break;
         } else if (ret == 0) {
             // Timeout occurred
@@ -262,7 +263,7 @@ void ChatClient::runCLI() {
                 // Directly handle /rename and /help commands even if waiting for a response
                 if (command == "/rename" || command == "/help") {
                     processCommand(input);
-                } else if (command == "/auth" || !waiting_for_auth) {
+                } else if (command == "/auth" || (!waiting_for_auth && !waiting_for_confirm && !waiting_for_response)) {
                     if (command_queue.size() == 0) {
                         processCommand(input);
                     } else {
@@ -278,22 +279,30 @@ void ChatClient::runCLI() {
                     printHelp();
                 }
             } else if (std::cin.eof()) {
-                std::cerr << "EOF detected on stdin. Shutting down..." << std::endl;
-                return;
+                std::cerr << "ERR: EOF detected on stdin. Shutting down..." << std::endl;
+
+                while (!waiting_for_response && command_queue.size() != 0) {
+                    std::string next_command = command_queue.front();
+                    command_queue.pop();
+                    processCommand(next_command);
+                }
+
+                return EXIT_SUCCESS;
             } else {
-                std::cerr << "Error reading from stdin. Shutting down..." << std::endl;
-                return;
+                std::cerr << "ERR: Error reading from stdin. Shutting down..." << std::endl;
+                return EXIT_FAILURE;
             }
         }
 
         // If not waiting for a response and there are queued commands, process the next one
         while (!waiting_for_response && command_queue.size() != 0) {
-            std::cerr << "QUEUE" << std::endl;
             std::string next_command = command_queue.front();
             command_queue.pop();
             processCommand(next_command);
         }
     }
+
+    return EXIT_SUCCESS;
 }
 
 // Example implementation of processCommand (you need to implement it based on your needs)
@@ -376,8 +385,17 @@ void ChatClient::processMessage(const std::string& message) {
             }
         case MessageType::UNKNOWN:
         default:
-            std::cerr << "ERR: Unknown or malformed message received. ||" << message <<  "||" << std::endl;
-            break;
+            {
+                std::cerr << "ERR: Unknown or malformed UDP message received." << std::endl;
+
+                ErrorMessage msg(display_name, message);
+
+                sendMessage(msg.serialize());
+
+                err = true;
+
+                break;
+            }
     }
 }
 
@@ -444,6 +462,15 @@ void ChatClient::processMessage(const std::vector<uint8_t>& message) {
             }
         default:
             std::cerr << "ERR: Unknown or malformed UDP message received." << std::endl;
+
+            UnknownMessage umsg(message);
+
+            if (!sendConfirmMessage(umsg.message_id)) std::cerr << "ERR: confirm message is not sent" << std::endl;
+
+            ErrorMessage msg(display_name);
+
+            sendMessage(msg.serialize(umsg.payload, mid));
+
             break;
     }
 }
@@ -455,6 +482,8 @@ void ChatClient::receiveMessage() {
 
         std::string message;
         if (bytes_received > 0) message.assign(buffer, bytes_received);
+
+        // std::cerr << "||" << message << "||" << std::endl;
 
         if (!message.empty()) processMessage(message);
     } else {

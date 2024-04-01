@@ -227,6 +227,9 @@ struct ErrorMessage {
     explicit ErrorMessage(const std::string& d, const std::string& c)
     : display_name(d), message_content(c) {}
 
+    explicit ErrorMessage(const std::string& d)
+    : display_name(d) {}
+
     std::string serialize() const {
         std::ostringstream ss;
         ss << "ERR FROM " << display_name << " IS " << message_content << "\r\n";
@@ -270,6 +273,25 @@ struct ErrorMessage {
             message.push_back(static_cast<uint8_t>(ch));
         }
         message.push_back(0); // Null terminator for message_content
+
+        return message;
+    }
+
+    // UDP Serialization
+    std::vector<uint8_t> serialize(const std::vector<uint8_t>& data, uint16_t message_id) const {
+        std::vector<uint8_t> message;
+        message.push_back(0xFE);
+        message.push_back((message_id >> 8) & 0xFF);
+        message.push_back(message_id & 0xFF);
+
+        for (auto &ch : display_name) {
+            message.push_back(static_cast<uint8_t>(ch));
+        }
+        message.push_back(0); // Null terminator for display_name
+
+        message.insert(message.end(), data.begin(), data.end());
+
+        // message.push_back(0); // Null terminator for message_content
 
         return message;
     }
@@ -340,6 +362,15 @@ struct ConfirmMessage {
         msg.message_id = (static_cast<uint16_t>(data[1]) << 8) | static_cast<uint16_t>(data[2]);
 
         return msg;
+    }
+};
+
+struct UnknownMessage {
+    uint16_t message_id;
+    std::vector<uint8_t> payload;
+    
+    explicit UnknownMessage(std::vector<uint8_t> p) : payload(p) {
+        message_id = (static_cast<uint16_t>(p[1]) << 8) | static_cast<uint16_t>(p[2]);
     }
 };
 

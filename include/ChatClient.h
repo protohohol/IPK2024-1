@@ -51,7 +51,7 @@ public:
     ChatClient(const AppConfig& config);
     ~ChatClient();
 
-    void runCLI();
+    int runCLI();
     bool connectToServer();
     void closeConnection();
 };

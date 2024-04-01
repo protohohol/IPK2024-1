@@ -1,11 +1,13 @@
 #include <cstdlib>
 #include <csignal>
 #include <iostream>
+#include <atomic>
 
 #include "CommandLineParser.h"
 #include "ChatClient.h"
 
 ChatClient* client = nullptr; // Global pointer to ChatClient instance
+std::atomic<bool> shutdownRequested(false);
 
 void handle_sigint(int sig) {
     if (client != nullptr) {
@@ -45,10 +47,12 @@ int main(int argc, char* argv[]) {
         return EXIT_FAILURE;
     }
 
-    client->runCLI();
+    int status = client->runCLI();
 
-    delete client;
-    client = nullptr;
+    if (client != nullptr) {
+        delete client;
+        client = nullptr;
+    }
 
-    return EXIT_SUCCESS;
+    return status;
 }
